@@ -89,17 +89,6 @@ app.get('/home', function (req, res) {
 
 });
 
-app.get('/login',
-  function(req, res){
-    res.render('login');
-  });
-
-app.post('/login',
-  passport.authenticate('local', { failureRedirect: '/login' }),
-  function(req, res) {
-    res.redirect('/');
-  });
-
 app.get('/logout',
   function(req, res){
     req.logout();
@@ -112,20 +101,15 @@ app.get('/profile',
     res.render('profile', { logged: logged});
   });
 
-app.get('/tasks',
-  require('connect-ensure-login').ensureLoggedIn(),
-  function(req, res){
-    var tasks = [{"id":1, "name":"Acheter le pain"}, {"id":2, "name":"Prendre un café"}];
-    res.render('tasks', { tasks: tasks });
-  });
-
 app.get('/signup', function (req, res) {
 
-  res.render('signup');
+  res.render('signup', { logged: logged});
 
 })
 
 app.post('/signup', function (req, res) {
+
+  var email = req.body.email;
 
   // We do an MD5 hash of the password because passwords are stored this way
   var password = CryptoJS.MD5(req.body.password);
@@ -139,11 +123,29 @@ app.post('/signup', function (req, res) {
 
   con.connect();
 
-  var sql = "INSERT INTO cdd_users (id, email, password) VALUES ('"+Date.now()+"','"+req.body.email+"','"+CryptoJS.MD5(req.body.password)+"')";
-
-  con.query(sql, function (err, result, fields) {
+  con.query("SELECT * FROM livreur_users WHERE email = '" + email + "'", function (err, result, fields) {
     if (err) throw err;
-    res.send("Please wait for a phone call or Email");
+    if (result.length != 0) {
+
+      var sql = "INSERT INTO cdd_users (id, email, password) VALUES ('"+Date.now()+"','"+req.body.email+"','"+CryptoJS.MD5(req.body.password)+"')";
+
+      con.query(sql, function (err, result, fields) {
+        if (err) throw err;
+        logged = true;
+        res.redirect('profile');
+      });
+
+    } else {
+
+      var sql = "INSERT INTO livreur_users (id, email, password) VALUES ('1','"+req.body.email+"','"+CryptoJS.MD5(req.body.password)+"')";
+
+      con.query(sql, function (err, result, fields) {
+        if (err) throw err;
+        logged = true;
+        res.redirect('profile');
+      });
+
+    }
   });
 
 })
@@ -158,23 +160,13 @@ app.get('/signout', function (req, res) {
 
 app.get('/signin', function (req, res) {
 
-  con = mysql.createConnection({
-    host: config.host,
-    user: config.user,
-    password: config.password,
-    database: config.database
-  });
-
-  res.render('signin');
+  res.render('signin', { logged: logged});
 
 })
 
 app.post('/signin', function (req, res) {
 
-  console.log(req.body.username);
-  console.log(req.body.password);
-
-  var username = req.body.username;
+  var email = req.body.email;
 
   // We do an MD5 hash of the password because passwords are stored this way
   var password = CryptoJS.MD5(req.body.password);
@@ -192,10 +184,10 @@ app.post('/signin', function (req, res) {
     if (err) throw err;
     if (result.length != 0) {
       if (result[0].password == password) {
-        //res.send(result);
         logged = true;
         if (result[0].id == '1') {
-          res.redirect('admin');
+          //res.redirect('admin');
+          res.redirect('profile');
         } else {
           res.redirect('profile');
         }
