@@ -208,7 +208,13 @@ app.post('/signin', function (req, res) {
   });
 
 })
-// END TEST
+
+
+app.get('/profile', function (req, res) {
+
+  res.render('profile');
+
+})
 
 var port = process.env.PORT || 3000;
 

@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  <script src="public/libs/jquery-validation-engine/js/languages/jquery.validationEngine-fr.js" type="text/javascript" charset="utf-8"></script>
+  <script src="public/libs/jquery-validation-engine/js/jquery.validationEngine.js" type="text/javascript" charset="utf-8"></script>
+  <link rel="stylesheet" href="public/libs/jquery-validation-engine/css/validationEngine.jquery.css" type="text/css"/>
 </head>
 <body>
 
@@ -18,6 +21,14 @@
           <div class="jumbotron">
             <h1>Profil</h1>
             <p>Ceci est votre profil</p>
+          </div>
+          <div class="form-group marged">
+            <label for="firstname"><strong>Prénom</strong> </label>
+            <input id="firstname" class="form-control validate[required,custom[onlyLetterNumber]]" name="firstname" maxlength="20" placeholder="Prénom"/>
+          </div>
+          <div class="form-group marged">
+            <label for="lastname"><strong>Nom</strong> </label>
+            <input id="lastname" class="form-control validate[required,custom[onlyLetterNumber]]" name="lastname" maxlength="20" placeholder="Nom"/>
           </div>
         </div>
       </div>
