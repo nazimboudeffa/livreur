@@ -38,3 +38,15 @@ exports.findByUsername = function(username, cb) {
     return cb(null, null);
   });
 }
+
+exports.findByEmail = function(email, cb) {
+  process.nextTick(function() {
+    for (var i = 0, len = records.length; i < len; i++) {
+      var record = records[i];
+      if (record.email === email) {
+        return cb(null, record);
+      }
+    }
+    return cb(null, null);
+  });
+}

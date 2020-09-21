@@ -35,9 +35,9 @@ const config = {"host" : process.env.host,"user" : process.env.user,"password" :
 // that the password is correct and then invoke `cb` with a user object, which
 // will be set at `req.user` in route handlers after authentication.
 passport.use(new Strategy(
-  function(username, password, cb) {
-    db.users.findByUsername(username, function(err, user) {
-      console.log("ok " + username + " " + user.password);
+  function(email, password, cb) {
+    db.users.findByEmail(email, function(err, user) {
+      console.log("ok " + email + " " + user.password);
       if (err) { return cb(err); }
       if (!user) { return cb(null, false); }
       if (user.password != CryptoJS.MD5(password)) { return cb(null, false); }
@@ -107,6 +107,7 @@ app.get('/signup', function (req, res) {
 
 })
 
+/*
 app.post('/signup', function (req, res) {
 
   var email = req.body.email;
@@ -149,6 +150,13 @@ app.post('/signup', function (req, res) {
   });
 
 })
+*/
+
+app.post('/signup', passport.authenticate('local', {
+  successRedirect: '/',
+  failureRedirect: '/signup',
+  failureFlash: true
+}))
 
 app.get('/signout', function (req, res) {
 
