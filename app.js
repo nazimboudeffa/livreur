@@ -6,6 +6,8 @@ const passport = require('passport');
 var Strategy = require('passport-local').Strategy;
 var db = require('./db');
 const CryptoJS = require('crypto-js');
+var configAuth = require('./auth');
+var FacebookStrategy = require('passport-facebook').Strategy;
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -44,6 +46,38 @@ passport.use(new Strategy(
       return cb(null, user);
     });
   }));
+
+passport.use(new FacebookStrategy({
+	    clientID: configAuth.facebookAuth.clientID,
+	    clientSecret: configAuth.facebookAuth.clientSecret,
+	    callbackURL: configAuth.facebookAuth.callbackURL
+	  },
+	  function(accessToken, refreshToken, profile, done) {
+	    	process.nextTick(function(){
+	    		User.findOne({'facebook.id': profile.id}, function(err, user){
+	    			if(err)
+	    				return done(err);
+	    			if(user)
+	    				return done(null, user);
+	    			else {
+	    				var newUser = new User();
+	    				newUser.facebook.id = profile.id;
+	    				newUser.facebook.token = accessToken;
+	    				newUser.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
+	    				newUser.facebook.email = profile.emails[0].value;
+
+	    				newUser.save(function(err){
+	    					if(err)
+	    						throw err;
+	    					return done(null, newUser);
+	    				})
+	    				console.log(profile);
+	    			}
+	    		});
+	    	});
+	    }
+
+	));
 
 // Configure Passport authenticated session persistence.
 //
@@ -157,6 +191,12 @@ app.post('/signup', passport.authenticate('local', {
   failureRedirect: '/signup',
   failureFlash: true
 }))
+
+app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email']}));
+
+app.get('/auth/facebook/callback',
+  passport.authenticate('facebook', { successRedirect: '/profile',
+                                      failureRedirect: '/' }));
 
 app.get('/signout', function (req, res) {
 
