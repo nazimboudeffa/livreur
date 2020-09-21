@@ -49,34 +49,44 @@ passport.use(new Strategy(
 passport.use(new FacebookStrategy({
     clientID: process.env.clientID,
     clientSecret: process.env.clientSecret,
-    callbackURL: process.env.callbackURL
+    callbackURL: process.env.callbackURL,
+    profileFields: [
+      'email',
+      'name',
+      'displayName',
+      'picture' ,
+      'name_format',
+      'short_name',
+    ]
   },
   function(accessToken, refreshToken, profile, done) {
     	process.nextTick(function(){
 
-        console.log(profile);
+      console.log(profile);
 
-        con = mysql.createConnection({
-          host: config.host,
-          user: config.user,
-          password: config.password,
-          database: config.database,
-        });
+      con = mysql.createConnection({
+        host: config.host,
+        user: config.user,
+        password: config.password,
+        database: config.database,
+      });
 
-        con.connect();
+      con.connect();
 
-        con.query("SELECT * FROM livreur_users WHERE id = '" + profile.id + "'", function (err, result, fields) {
-          if (err) throw err;
-          if (result.length === 0) {
+      con.query("SELECT * FROM livreur_facebook WHERE id = '" + profile.id + "'", function (err, result, fields) {
+        if (err) throw err;
+        if (result.length === 0) {
 
-            var sql = "INSERT INTO livreur_facebook (id, token, email, name) VALUES ('"+profile.id+"','"+accessToken+"','test@test.com','"+profile.displayName+"')";
+          var sql = "INSERT INTO livreur_facebook (id, token, email, name) VALUES ('"+profile.id+"','"+accessToken+"','+email+','"+profile.displayName+"')";
 
-            con.query(sql, function (err, result, fields) {
-              if (err) throw err;
-              logged = true;
-            });
-          }
-    	});
+          con.query(sql, function (err, result, fields) {
+            if (err) throw err;
+            logged = true;
+          });
+        }
+  	  });
+
+      done(null, profile);
     })
   }
 ));
@@ -114,7 +124,7 @@ app.get('/home', function (req, res) {
 
   con.connect();
 
-  con.query("SELECT * FROM cdd_trainings", function (err, results, fields) {
+  con.query("SELECT * FROM livreur_trainings", function (err, results, fields) {
     if (err) throw err;
     if (results.length != 0) {
       res.render('home', { logged: logged, trainings: results });
@@ -164,7 +174,7 @@ app.post('/signup', function (req, res) {
     if (err) throw err;
     if (result.length != 0) {
 
-      var sql = "INSERT INTO cdd_users (id, email, password) VALUES ('"+Date.now()+"','"+req.body.email+"','"+CryptoJS.MD5(req.body.password)+"')";
+      var sql = "INSERT INTO livreur_users (id, email, password) VALUES ('"+Date.now()+"','"+req.body.email+"','"+CryptoJS.MD5(req.body.password)+"')";
 
       con.query(sql, function (err, result, fields) {
         if (err) throw err;
@@ -194,11 +204,13 @@ app.post('/signup', passport.authenticate('local', {
   failureFlash: true
 }))
 
-app.get('/facebook', passport.authenticate('facebook', {scope: ['email']}));
+app.get('/facebook', passport.authenticate('facebook', { scope : ['email'] }));
 
 app.get('/facebook/callback',
-  passport.authenticate('facebook', { successRedirect: '/profile',
-                                      failureRedirect: '/signup' }));
+  passport.authenticate('facebook', {
+    successRedirect: '/profile',
+    failureRedirect: '/signup'
+}));
 
 app.get('/signout', function (req, res) {
 
