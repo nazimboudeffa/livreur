@@ -6,7 +6,6 @@ const passport = require('passport');
 var Strategy = require('passport-local').Strategy;
 var db = require('./db');
 const CryptoJS = require('crypto-js');
-var configAuth = require('./auth');
 var FacebookStrategy = require('passport-facebook').Strategy;
 
 const app = express();
@@ -48,36 +47,39 @@ passport.use(new Strategy(
   }));
 
 passport.use(new FacebookStrategy({
-	    clientID: configAuth.facebookAuth.clientID,
-	    clientSecret: configAuth.facebookAuth.clientSecret,
-	    callbackURL: configAuth.facebookAuth.callbackURL
-	  },
-	  function(accessToken, refreshToken, profile, done) {
-	    	process.nextTick(function(){
-	    		User.findOne({'facebook.id': profile.id}, function(err, user){
-	    			if(err)
-	    				return done(err);
-	    			if(user)
-	    				return done(null, user);
-	    			else {
-	    				var newUser = new User();
-	    				newUser.facebook.id = profile.id;
-	    				newUser.facebook.token = accessToken;
-	    				newUser.facebook.name = profile.name.givenName + ' ' + profile.name.familyName;
-	    				newUser.facebook.email = profile.emails[0].value;
+    clientID: process.env.clientID,
+    clientSecret: process.env.clientSecret,
+    callbackURL: process.env.callbackURL
+  },
+  function(accessToken, refreshToken, profile, done) {
+    	process.nextTick(function(){
 
-	    				newUser.save(function(err){
-	    					if(err)
-	    						throw err;
-	    					return done(null, newUser);
-	    				})
-	    				console.log(profile);
-	    			}
-	    		});
-	    	});
-	    }
+        console.log(profile);
 
-	));
+        con = mysql.createConnection({
+          host: config.host,
+          user: config.user,
+          password: config.password,
+          database: config.database,
+        });
+
+        con.connect();
+
+        con.query("SELECT * FROM livreur_users WHERE id = '" + profile.id + "'", function (err, result, fields) {
+          if (err) throw err;
+          if (result.length === 0) {
+
+            var sql = "INSERT INTO livreur_facebook (id, token, email, name) VALUES ('"+profile.id+"','"+accessToken+"','test@test.com','"+profile.displayName+"')";
+
+            con.query(sql, function (err, result, fields) {
+              if (err) throw err;
+              logged = true;
+            });
+          }
+    	});
+    })
+  }
+));
 
 // Configure Passport authenticated session persistence.
 //
@@ -187,16 +189,16 @@ app.post('/signup', function (req, res) {
 */
 
 app.post('/signup', passport.authenticate('local', {
-  successRedirect: '/',
+  successRedirect: '/profile',
   failureRedirect: '/signup',
   failureFlash: true
 }))
 
-app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email']}));
+app.get('/facebook', passport.authenticate('facebook', {scope: ['email']}));
 
-app.get('/auth/facebook/callback',
+app.get('/facebook/callback',
   passport.authenticate('facebook', { successRedirect: '/profile',
-                                      failureRedirect: '/' }));
+                                      failureRedirect: '/signup' }));
 
 app.get('/signout', function (req, res) {
 
